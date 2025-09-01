@@ -1,4 +1,4 @@
-name: Build and Release opensim-0.9.3.1-Extended Linux Dotnet 6
+name: Build and Release opensim-0.9.3.1-Extended Linux Dotnet 6 
 
 on:
   push:
