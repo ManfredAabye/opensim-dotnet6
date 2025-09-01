@@ -1,0 +1,73 @@
+name: Build and Release opensim-0.9.3.1-Extended Linux Dotnet 6
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout main repo
+      uses: actions/checkout@v4
+
+    - name: Install prerequisites
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git zip
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Extract short commit hash
+      run: echo "SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
+    - name: Prepare build workspace
+      run: |
+        export START_DIR=$GITHUB_WORKSPACE
+        export OPENSIM_DIR="$START_DIR/opensim"
+        export CURRENCY_DIR="$START_DIR/opensimcurrencyserver"
+        export JANUS_DIR="$OPENSIM_DIR/addon-modules/os-webrtc-janus"
+
+        echo "🔧 Building OpenSim WebRTC Currency Server..."
+
+        echo "🧹 Cleaning up old build artifacts..."
+        rm -rf "$OPENSIM_DIR" "$CURRENCY_DIR" "$OSSLSCRIPTS_DIR"
+
+        echo "📥 Cloning OpenSim repository..."
+        git clone https://github.com/opensim/opensim.git "$OPENSIM_DIR"
+
+        echo "📥 Cloning OpenSim Currency Server repository..."
+        git clone https://github.com/ManfredAabye/opensimcurrencyserver-dotnet.git "$CURRENCY_DIR"
+
+        echo "📦 Copying Currency Server modules and binaries to OpenSim..."
+        cp -r "$CURRENCY_DIR/addon-modules" "$OPENSIM_DIR/"
+        cp -r "$CURRENCY_DIR/bin" "$OPENSIM_DIR/"
+
+        echo "📥 Cloning os-webrtc-janus repository..."
+        git clone https://github.com/Misterblue/os-webrtc-janus.git "$JANUS_DIR"
+
+    - name: Prebuild and Compile OpenSimulator
+      run: |
+        cd opensim
+        cp bin/System.Drawing.Common.dll.linux bin/System.Drawing.Common.dll
+        dotnet bin/prebuild.dll /target vs2022 /targetframework net6_0 /excludedir "obj,bin" /file prebuild.xml
+        dotnet build -c Release OpenSim.sln
+
+    - name: Archive build artifacts
+      run: |
+        cd opensim
+        zip -r ../opensim-0.9.3.1-Extended_linux_net6.zip bin ThirdPartyLicenses README.md CONTRIBUTORS.txt LICENSE.txt
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: "opensim-0.9.3.1-Extended-linux-net6"
+        name: "opensim-0.9.3.1-Extended Linux Release NET 6"
+        files: opensim-0.9.3.1-Extended_linux_net6.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
