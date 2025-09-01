@@ -1,5 +1,7 @@
 Welcome to OpenSimulator (OpenSim for short)!
 
+OpenSimulator 0.9.3.1Dev Enhaced WebRTC Money Dotnet6 Linux (Ubuntu 18.04 etc.)
+
 # Overview
 
 OpenSim is a BSD Licensed Open Source project to develop a functioning
